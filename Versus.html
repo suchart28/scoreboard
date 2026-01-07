@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { 
+            background: transparent; 
+            font-family: 'Kanit', sans-serif; 
+            color: white; 
+            overflow: hidden; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh;
+        }
+        .vs-container {
+            display: flex;
+            align-items: center;
+            gap: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 40px 80px;
+            border-radius: 20px;
+            border-bottom: 8px solid #f1c40f;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            animation: fadeIn 1s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .vs-team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+        }
+        .vs-logo {
+            width: 220px;
+            height: 220px;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        @keyframes logoFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        .vs-name {
+            font-size: 42px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-top: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        }
+
+        .vs-middle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .vs-text {
+            font-size: 80px;
+            font-weight: 900;
+            color: #f1c40f;
+            font-style: italic;
+            text-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+        }
+        .tourney-display {
+            font-size: 20px;
+            background: #f1c40f;
+            color: #000;
+            padding: 5px 20px;
+            font-weight: 700;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="vs-container">
+        <div class="vs-team">
+            <img id="vs-t1-logo" class="vs-logo" src="">
+            <div id="vs-t1-name" class="vs-name">TEAM A</div>
+        </div>
+
+        <div class="vs-middle">
+            <div id="vs-tourney" class="tourney-display">TOURNAMENT</div>
+            <div class="vs-text">VS</div>
+        </div>
+
+        <div class="vs-team">
+            <img id="vs-t2-logo" class="vs-logo" src="">
+            <div id="vs-t2-name" class="vs-name">TEAM B</div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        socket.on('updateData', (data) => {
+            document.getElementById('vs-tourney').innerText = data.tourney_name;
+            document.getElementById('vs-t1-name').innerText = data.t1_name;
+            document.getElementById('vs-t2-name').innerText = data.t2_name;
+            document.getElementById('vs-t1-logo').src = data.t1_logo || '';
+            document.getElementById('vs-t2-logo').src = data.t2_logo || '';
+        });
+    </script>
+</body>
+</html>
