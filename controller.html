@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: 'Kanit'; padding: 20px; background: #121212; color: #e0e0e0; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        h2, h3 { color: #f1c40f; margin: 0 0 15px 0; }
+        .flex { display: flex; gap: 10px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        input, select { padding: 10px; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 6px; }
+        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; font-family: 'Kanit'; }
+        button:active { transform: scale(0.95); }
+        .btn-green { background: #27ae60; color: white; }
+        .btn-red { background: #c0392b; color: white; }
+        .btn-blue { background: #2980b9; color: white; }
+        .btn-gold { background: #f1c40f; color: #000; }
+        .btn-gray { background: #444; color: #bbb; }
+        .timer-val { font-size: 32px; font-weight: bold; color: #2ecc71; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <div style="max-width: 950px; margin: auto;">
+        <div class="card">
+            🏆 Tournament: <input type="text" id="t_in" oninput="updateState('tourney_name', this.value)" style="width:70%" placeholder="ระบุชื่อรายการ">
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <input type="text" id="t1_n" oninput="updateState('t1_name', this.value)" placeholder="ชื่อทีม" style="width:90%">
+                <div class="flex">เสื้อ: <input type="color" id="t1_c" oninput="updateState('t1_color', this.value)"> กางเกง: <input type="color" id="t1_sc" oninput="updateState('t1_sub_color', this.value)"></div>
+                <div class="flex">Logo: <input type="file" onchange="upLogo('t1_logo', this)"></div>
+                <div class="flex">สกอร์: <button class="btn-green" onclick="editScore('t1_score', 1)">+1</button><button class="btn-red" onclick="editScore('t1_score', -1)">-1</button></div>
+                <div class="flex">จุดโทษ: <button class="btn-green" onclick="addPen('t1_pens','scored')">◯</button><button class="btn-red" onclick="addPen('t1_pens','missed')">✕</button><button class="btn-gray" onclick="clearPen('t1_pens')">ล้าง</button></div>
+            </div>
+            <div class="card">
+                <input type="text" id="t2_n" oninput="updateState('t2_name', this.value)" placeholder="ชื่อทีม" style="width:90%">
+                <div class="flex">เสื้อ: <input type="color" id="t2_c" oninput="updateState('t2_color', this.value)"> กางเกง: <input type="color" id="t2_sc" oninput="updateState('t2_sub_color', this.value)"></div>
+                <div class="flex">Logo: <input type="file" onchange="upLogo('t2_logo', this)"></div>
+                <div class="flex">สกอร์: <button class="btn-green" onclick="editScore('t2_score', 1)">+1</button><button class="btn-red" onclick="editScore('t2_score', -1)">-1</button></div>
+                <div class="flex">จุดโทษ: <button class="btn-green" onclick="addPen('t2_pens','scored')">◯</button><button class="btn-red" onclick="addPen('t2_pens','missed')">✕</button><button class="btn-gray" onclick="clearPen('t2_pens')">ล้าง</button></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>⏱️ เวลาการแข่งขัน</h3>
+            <div class="flex">
+                <span id="t-val" class="timer-val">00:00</span>
+                <button id="t-btn" class="btn-green" onclick="toggleTimer()">START</button>
+                <button class="btn-blue" onclick="adjTime(60)">+1 นาที</button>
+                <button class="btn-blue" onclick="adjTime(-60)">-1 นาที</button>
+                <button class="btn-gray" onclick="updateState('timer_seconds', 0)">Reset</button>
+                | ทดเวลา: <input type="number" id="a_in" oninput="updateState('added_time', parseInt(this.value)||0)" style="width:60px">
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>⚽ ผู้ทำประตู</h3>
+            <div class="flex">
+                <select id="g_side"><option value="t1">Team 1</option><option value="t2">Team 2</option></select>
+                <input type="text" id="g_in" placeholder="ชื่อผู้ทำประตู" style="flex:1">
+                <button class="btn-gold" onclick="sendGoal()">GOAL & +1 SCORE</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🔄 เปลี่ยนตัว</h3>
+            <div class="flex">
+                <select id="s_side"><option value="t1">Team 1</option><option value="t2">Team 2</option></select>
+                เข้า: <input type="text" id="p_in_in" placeholder="เข้า" style="width:120px"> 
+                ออก: <input type="text" id="p_out_in" placeholder="ออก" style="width:120px">
+                <button class="btn-green" onclick="doSub()">SAVE & SHOW</button>
+                <button class="btn-red" onclick="updateState('show_sub', false)">HIDE</button>
+            </div>
+        </div>
+
+        <button class="btn-red" onclick="resetAll()" style="width:100%; padding:15px; border-radius:10px; margin-top:10px;">⚠️ RESET ALL DATA</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let state = {}, isRun = false, tInt;
+
+        socket.on('updateData', (d) => {
+            state = d;
+            document.getElementById('t_in').value = d.tourney_name;
+            document.getElementById('t-val').innerText = `${Math.floor(d.timer_seconds/60).toString().padStart(2,'0')}:${(d.timer_seconds%60).toString().padStart(2,'0')}`;
+        });
+
+        function updateState(k, v) { if(k) state[k] = v; socket.emit('updateGameState', state); }
+        function editScore(k, v) { state[k] = Math.max(0, state[k]+v); updateState(); }
+        function adjTime(v) { state.timer_seconds = Math.max(0, state.timer_seconds+v); updateState(); }
+        
+        function toggleTimer() {
+            isRun = !isRun; const b = document.getElementById('t-btn');
+            if(isRun) { b.innerText="PAUSE"; b.className="btn-red"; tInt=setInterval(()=>{state.timer_seconds++; updateState();},1000); }
+            else { b.innerText="START"; b.className="btn-green"; clearInterval(tInt); }
+        }
+
+        function sendGoal() {
+            const n = document.getElementById('g_in').value;
+            const s = document.getElementById('g_side').value;
+            if(!n) return;
+            socket.emit('goalScored', { name: n, teamName: state[s+'_name'], logo: state[s+'_logo'], color: state[s+'_color'] });
+            state[s+'_score']++; updateState(); document.getElementById('g_in').value='';
+        }
+
+        function doSub() {
+            const side = document.getElementById('s_side').value;
+            state.current_sub = { 
+                in: document.getElementById('p_in_in').value, 
+                out: document.getElementById('p_out_in').value, 
+                logo: state[side+'_logo'] 
+            };
+            state.show_sub = true; updateState();
+        }
+
+        function addPen(k, v) { state[k].push(v); updateState(); }
+        function clearPen(k) { state[k] = []; updateState(); }
+        function upLogo(k, i) { const r = new FileReader(); r.onload = (e) => { state[k] = e.target.result; updateState(); }; if(i.files[0]) r.readAsDataURL(i.files[0]); }
+        function resetAll() { if(confirm("ล้างข้อมูล?")) { socket.emit('updateGameState', { tourney_name: 'MATCHDAY', t1_name: 'TEAM A', t2_name: 'TEAM B', t1_score: 0, t2_score: 0, t1_logo: '', t2_logo: '', t1_color: '#ff0000', t1_sub_color: '#ffffff', t2_color: '#0000ff', t2_sub_color: '#ffffff', t1_pens: [], t2_pens: [], timer_seconds: 0, added_time: 0, show_sub: false, current_sub: { in: '', out: '', logo: '' } }); location.reload(); }}
+    </script>
+</body>
+</html>

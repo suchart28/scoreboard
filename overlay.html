@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { background: transparent; font-family: 'Kanit', sans-serif; color: white; overflow: hidden; margin: 0; }
+        .container { position: relative; width: 880px; margin: 20px auto; display: flex; flex-direction: column; align-items: center; }
+        
+        .tourney-name { background: #f1c40f; color: #000; padding: 6px 50px; font-size: 24px; font-weight: 900; border-radius: 8px 8px 0 0; text-transform: uppercase; }
+        
+        .scoreboard { display: flex; background: rgba(20, 20, 20, 0.95); border-bottom: 5px solid #f1c40f; width: 100%; height: 100px; align-items: center; border-radius: 5px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        
+        /* Kit Colors Style */
+        .kit-bar { display: flex; flex-direction: column; width: 14px; height: 55px; border: 1px solid rgba(255,255,255,0.2); overflow: hidden; border-radius: 3px; margin: 0 10px; }
+        .shirt-color { flex: 2; }
+        .short-color { flex: 1; }
+
+        .team { flex: 4; display: flex; align-items: center; padding: 0 15px; }
+        .team.left { flex-direction: row; } 
+        .team.right { flex-direction: row-reverse; }
+        
+        .team-name { font-size: 28px; font-weight: 700; text-transform: uppercase; margin: 0 10px; }
+        .logo { width: 65px; height: 65px; object-fit: contain; }
+        
+        .score { flex: 1; font-size: 60px; color: #f1c40f; text-align: center; font-weight: 900; }
+        .timer-box { flex: 2.2; background: #222; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; border-left: 2px solid #444; border-right: 2px solid #444; }
+        
+        .pens { display: flex; gap: 4px; margin-top: 5px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid #444; }
+        .dot.scored { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; border: none; }
+        .dot.missed { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; border: none; }
+
+        #sub-box { 
+            position: absolute; bottom: 50px; left: 30px; width: 560px; background: rgba(0,0,0,0.95); 
+            border-left: 15px solid #2ecc71; padding: 15px 25px; display: none; align-items: center; gap: 25px; 
+            border-radius: 0 10px 10px 0; animation: slideIn 0.6s ease-out; box-shadow: 5px 5px 20px rgba(0,0,0,0.5);
+        }
+        @keyframes slideIn { from { transform: translateX(-110%); } to { transform: translateX(0); } }
+
+        #goal-box { 
+            position: absolute; top: 135px; width: 500px; padding: 20px; border-radius: 15px; 
+            display: none; text-align: center; animation: bounce 0.6s ease; 
+        }
+        @keyframes bounce { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="sub-box">
+        <img id="sub-logo" src="" style="width:85px; height:85px; object-fit:contain;">
+        <div>
+            <div style="font-size: 32px; font-weight: 900; color:#2ecc71">▲ IN: <span id="p-in" style="color:white"></span></div>
+            <div style="font-size: 32px; font-weight: 900; color:#e74c3c">▼ OUT: <span id="p-out" style="color:#bbb"></span></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="tour-display" class="tourney-name">MATCHDAY</div>
+        <div class="scoreboard">
+            <div class="team left">
+                <img id="t1-logo" class="logo" src="">
+                <div class="kit-bar">
+                    <div id="t1-s-c" class="shirt-color"></div>
+                    <div id="t1-sh-c" class="short-color"></div>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div id="t1-n" class="team-name">TEAM A</div>
+                    <div id="t1-pens" class="pens"></div>
+                </div>
+            </div>
+            <div id="t1-s" class="score">0</div>
+            <div class="timer-box">
+                <div id="timer">00:00</div>
+                <div id="add-t" style="color:#f1c40f; font-size:22px; display:none;">+0</div>
+            </div>
+            <div id="t2-s" class="score">0</div>
+            <div class="team right">
+                <img id="t2-logo" class="logo" src="">
+                <div class="kit-bar">
+                    <div id="t2-s-c" class="shirt-color"></div>
+                    <div id="t2-sh-c" class="short-color"></div>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div id="t2-n" class="team-name">TEAM B</div>
+                    <div id="t2-pens" class="pens"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="goal-box">
+            <div style="font-size: 22px; font-weight: 900; letter-spacing: 3px;">GOAL !!!</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:20px; margin:10px 0;">
+                <img id="g-logo" src="" style="width:75px; height:75px; object-fit:contain;">
+                <div id="g-name" style="font-size: 42px; font-weight: 900; text-transform: uppercase;">PLAYER</div>
+            </div>
+            <div id="g-team" style="font-size: 18px; opacity:0.8;">TEAM NAME</div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        socket.on('updateData', (d) => {
+            document.getElementById('tour-display').innerText = d.tourney_name;
+            document.getElementById('t1-n').innerText = d.t1_name;
+            document.getElementById('t2-n').innerText = d.t2_name;
+            document.getElementById('t1-s').innerText = d.t1_score;
+            document.getElementById('t2-s').innerText = d.t2_score;
+            document.getElementById('t1-logo').src = d.t1_logo || '';
+            document.getElementById('t2-logo').src = d.t2_logo || '';
+            
+            // Kit Colors Update
+            document.getElementById('t1-s-c').style.backgroundColor = d.t1_color;
+            document.getElementById('t1-sh-c').style.backgroundColor = d.t1_sub_color;
+            document.getElementById('t2-s-c').style.backgroundColor = d.t2_color;
+            document.getElementById('t2-sh-c').style.backgroundColor = d.t2_sub_color;
+            
+            const s = d.timer_seconds;
+            document.getElementById('timer').innerText = `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+            document.getElementById('add-t').innerText = `+${d.added_time}`;
+            document.getElementById('add-t').style.display = d.added_time > 0 ? 'block' : 'none';
+            
+            document.getElementById('t1-pens').innerHTML = d.t1_pens.map(p => `<div class="dot ${p}"></div>`).join('');
+            document.getElementById('t2-pens').innerHTML = d.t2_pens.map(p => `<div class="dot ${p}"></div>`).join('');
+            
+            const sb = document.getElementById('sub-box');
+            if(d.show_sub && d.current_sub.logo) {
+                document.getElementById('sub-logo').src = d.current_sub.logo;
+                document.getElementById('p-in').innerText = d.current_sub.in;
+                document.getElementById('p-out').innerText = d.current_sub.out;
+                sb.style.display = 'flex';
+            } else { sb.style.display = 'none'; }
+        });
+
+        socket.on('showGoalPopup', (d) => {
+            const g = document.getElementById('goal-box');
+            document.getElementById('g-name').innerText = d.name;
+            document.getElementById('g-team').innerText = d.teamName;
+            document.getElementById('g-logo').src = d.logo;
+            g.style.backgroundColor = d.color;
+            g.style.color = (d.color === '#ffffff' || d.color.toLowerCase() === 'white') ? '#000' : '#fff';
+            g.style.display = 'block';
+            setTimeout(() => g.style.display = 'none', 6000);
+        });
+    </script>
+</body>
+</html>
