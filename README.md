@@ -3,8 +3,9 @@
 2. สร้างโฟลเดอร์ใหม่สำหรับโปรเจกต์นี้ (เช่น football-live)
 3. เปิด Terminal หรือ Command Prompt เข้าไปในโฟลเดอร์นั้น แล้วพิมพ์คำสั่ง:
 
->> npm init -y
->> npm install express socket.io
+Bash
+1. npm init -y
+2. npm install express socket.io
 
 
 วิธีการใช้งาน
